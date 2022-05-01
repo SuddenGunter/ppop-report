@@ -7,5 +7,3 @@ config :ppop_report, Report,
   From: "",
   To: "",
   Ignored: [""]
-
-import_config "#{config_env()}.exs"
