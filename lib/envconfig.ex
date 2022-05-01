@@ -16,7 +16,7 @@ defmodule EnvConfig do
 
   defp validate(cfg) do
     IO.inspect(cfg, label: "config")
-
+    # todo: validate required fields
     {
       :valid,
       cfg
