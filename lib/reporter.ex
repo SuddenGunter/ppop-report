@@ -3,6 +3,7 @@ defmodule Reporter do
 
   def build(cfg) do
     {donations, spent} = fetch(cfg) |> process(cfg)
+
     header(donations, spent) |> print_header()
     donations |> tablify |> print_table()
     spent |> tablify |> print_table()
@@ -29,13 +30,14 @@ defmodule Reporter do
 
     IO.puts("received #{Enum.count(transactions)} transactions")
 
-    transactions
-    |> Enum.filter(fn x -> ignore?(ignored, x.description) end)
-    |> Enum.map(fn x -> Map.put(x, :amount, x.amount / 100) end)
-    |> Enum.sort_by(fn x -> x.time end)
+    processed =
+      transactions
+      |> Enum.filter(fn x -> relates_to_fund?(ignored, x.description) end)
+      |> Enum.map(fn x -> Map.put(x, :amount, x.amount / 100) end)
+      |> Enum.sort_by(fn x -> x.time end)
 
-    donations = Enum.filter(transactions, fn x -> x.amount >= 0 end)
-    spent = Enum.filter(transactions, fn x -> x.amount < 0 end)
+    donations = Enum.filter(processed, fn x -> x.amount >= 0 end)
+    spent = Enum.filter(processed, fn x -> x.amount < 0 end)
 
     {donations, spent}
   end
@@ -46,36 +48,43 @@ defmodule Reporter do
       cond do
         x.comment == nil ->
           [
-            "| #{format_date(DateTime.from_unix!(x.time))} | #{x.amount} UAH   | #{x.description} |"
+            "| #{format_date(DateTime.from_unix!(x.time))} | #{format_amount(x.amount)} UAH   | #{x.description} |"
           ]
 
         String.length(x.comment) >= 45 ->
           [
-            "| #{format_date(DateTime.from_unix!(x.time))} | #{x.amount} UAH   | #{x.comment} |",
+            "| #{format_date(DateTime.from_unix!(x.time))} | #{format_amount(x.amount)} UAH   | #{x.comment} |",
             "|    |     | #{x.description} |"
           ]
 
         true ->
           [
-            "| #{format_date(DateTime.from_unix!(x.time))} | #{x.amount} UAH   | #{x.comment}, #{x.description} |"
+            "| #{format_date(DateTime.from_unix!(x.time))} | #{format_amount(x.amount)} UAH   | #{x.comment}, #{x.description} |"
           ]
       end
     end)
   end
 
-  defp ignore?(ignored, description) do
-    false
+  # todo
+  defp relates_to_fund?(_, _) do
+    true
+  end
+
+  defp format_amount(amount) do
+    Float.round(amount, 2) |> :erlang.float_to_binary([:compact, {:decimals, 10}])
   end
 
   defp print_table(table) do
     IO.puts("| Дата | Сума | Комент/Відправник |")
     IO.puts("| ---- | ----- | ----- |")
     table |> Enum.map(fn x -> IO.puts(x) end)
+    IO.puts("")
   end
 
   defp print_header({d, s}) do
     diff = abs(d) - abs(s)
     IO.puts("total donations: #{d}, total spent: #{s}, total balance: #{diff}")
+    IO.puts("")
   end
 
   defp header(donations, spent) do
