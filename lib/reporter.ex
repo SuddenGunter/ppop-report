@@ -48,25 +48,30 @@ defmodule Reporter do
       cond do
         x.comment == nil ->
           [
-            "| #{format_date(DateTime.from_unix!(x.time))} | #{Float.to_string(x.amount)} UAH   | #{x.description} |"
+            "| #{format_date(DateTime.from_unix!(x.time))} | #{format_amount(x.amount)} UAH   | #{x.description} |"
           ]
 
         String.length(x.comment) >= 45 ->
           [
-            "| #{format_date(DateTime.from_unix!(x.time))} | #{Float.to_string(x.amount)} UAH   | #{x.comment} |",
+            "| #{format_date(DateTime.from_unix!(x.time))} | #{format_amount(x.amount)} UAH   | #{x.comment} |",
             "|    |     | #{x.description} |"
           ]
 
         true ->
           [
-            "| #{format_date(DateTime.from_unix!(x.time))} | #{Float.to_string(x.amount)} UAH   | #{x.comment}, #{x.description} |"
+            "| #{format_date(DateTime.from_unix!(x.time))} | #{format_amount(x.amount)} UAH   | #{x.comment}, #{x.description} |"
           ]
       end
     end)
   end
 
+  # todo
   defp relates_to_fund?(_, _) do
     true
+  end
+
+  defp format_amount(amount) do
+    Float.round(amount, 2) |> :erlang.float_to_binary([:compact, {:decimals, 10}])
   end
 
   defp print_table(table) do
