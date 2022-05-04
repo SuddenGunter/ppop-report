@@ -111,8 +111,15 @@ defmodule Reporter do
   end
 
   defp print_header({d, s}) do
-    diff = abs(d) - abs(s)
-    IO.puts("total donations: #{d}, total spent: #{s}, total balance: #{diff}")
+    df = Float.round(d, 2)
+    sf = Float.round(s, 2)
+
+    diff = abs(df) - abs(sf)
+
+    IO.puts(
+      "total donations: #{format_amount(df)}, total spent: #{format_amount(sf)}, total balance: #{format_amount(diff)}"
+    )
+
     IO.puts("")
   end
 
