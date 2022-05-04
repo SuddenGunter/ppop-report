@@ -26,13 +26,14 @@ defmodule Reporter do
   end
 
   defp process(transactions, cfg) do
-    ignored = cfg[:Ignored]
+    desc = cfg[:IgnoredDescriptions]
+    ids = cfg[:AlwaysAllowedIDs]
 
     IO.puts("received #{Enum.count(transactions)} transactions")
 
     processed =
       transactions
-      |> Enum.filter(fn x -> relates_to_fund?(ignored, x.description) end)
+      |> Enum.filter(fn x -> relates_to_fund?(desc, ids, x) end)
       |> Enum.map(fn x -> Map.put(x, :amount, x.amount / 100) end)
       |> Enum.sort_by(fn x -> x.time end)
 
@@ -48,30 +49,58 @@ defmodule Reporter do
       cond do
         x.comment == nil ->
           [
-            "| #{format_date(DateTime.from_unix!(x.time))} | #{format_amount(x.amount)} UAH   | #{x.description} |"
+            "| #{format_date(DateTime.from_unix!(x.time))} | #{format_amount(x.amount)} UAH   | #{format_description(x.description)} |"
           ]
 
         String.length(x.comment) >= 45 ->
           [
             "| #{format_date(DateTime.from_unix!(x.time))} | #{format_amount(x.amount)} UAH   | #{x.comment} |",
-            "|    |     | #{x.description} |"
+            "|    |     | #{format_description(x.description)} |"
           ]
 
         true ->
           [
-            "| #{format_date(DateTime.from_unix!(x.time))} | #{format_amount(x.amount)} UAH   | #{x.comment}, #{x.description} |"
+            "| #{format_date(DateTime.from_unix!(x.time))} | #{format_amount(x.amount)} UAH   | #{x.comment}, #{format_description(x.description)} |"
           ]
       end
     end)
   end
 
-  # todo
-  defp relates_to_fund?(_, _) do
-    true
+  defp format_description(description) do
+    cond do
+      String.starts_with?(description, "Приват24: ") ->
+        String.replace_prefix(description, "Приват24: ", "")
+        |> String.split(" ", trim: true)
+        |> then(fn x -> Enum.at(x, 1) <> " " <> String.slice(Enum.at(x, 0), 0..0) <> "." end)
+
+      String.starts_with?(description, "Від: ") ->
+        String.replace_prefix(description, "Від: ", "")
+        |> String.split(" ", trim: true)
+        |> then(fn x -> Enum.at(x, 0) <> " " <> String.slice(Enum.at(x, 1), 0..0) <> "." end)
+
+      true ->
+        description
+    end
+  end
+
+  defp relates_to_fund?(idesc, iid, transaction) do
+    cond do
+      Enum.any?(iid, fn x -> x == transaction.id end) ->
+        true
+
+      transaction.description != nil and
+          Enum.any?(idesc, fn x ->
+            String.contains?(transaction.description, x)
+          end) ->
+        false
+
+      true ->
+        true
+    end
   end
 
   defp format_amount(amount) do
-    Float.round(amount, 2) |> :erlang.float_to_binary([:compact, {:decimals, 10}])
+    Float.round(amount, 2) |> :erlang.float_to_binary([{:decimals, 2}])
   end
 
   defp print_table(table) do

@@ -6,6 +6,7 @@ config :ppop_report, Report,
   AccountID: "",
   From: "",
   To: "",
-  Ignored: [""]
+  IgnoredDescriptions: [],
+  AlwaysAllowedIDs: []
 
 import_config "#{config_env()}.exs"

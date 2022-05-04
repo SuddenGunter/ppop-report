@@ -1,9 +1,10 @@
 import Config
 
 config :ppop_report, Report,
-  ApiUrl: "",
+  ApiUrl: "https://api.monobank.ua",
   ApiKey: "",
   AccountID: "",
-  From: "",
-  To: "",
-  Ignored: [""]
+  From: "1649750400",
+  To: "1651006800",
+  IgnoredDescriptions: ["З білої картки"],
+  AlwaysAllowedIDs: []
